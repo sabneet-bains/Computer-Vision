@@ -2,7 +2,9 @@
 
 A repository of Computer Vision and Image Processing algorithms.
 
-<img src="https://github.com/sabneet95/Game-Development/blob/main/Clue/gameboard.gif" width="853.3" height="480">
+<img src="https://github.com/sabneet95/Computer-Vision/blob/main/curves.jpg">
+<img src="https://github.com/sabneet95/Computer-Vision/blob/main/sith.jpg">
+<img src="https://github.com/sabneet95/Computer-Vision/blob/main/bounded2.gif">
 
 ## Requirements
 
