@@ -1,161 +1,258 @@
+#!/usr/bin/env python3
+"""
+Advanced Coin Detection from Video
+-----------------------------------
+Description:
+  This script reads a video file and processes each frame to detect, classify,
+  and value coins in real-time. It integrates multiple classical OpenCV techniques:
+    - Background subtraction to isolate moving coins.
+    - Hough Circle Transform to detect circular coin candidates.
+    - Contour analysis (with circularity filtering) to further validate candidates.
+  For each candidate, a region of interest (ROI) is extracted and classified using either
+  a custom-trained CNN (if available) or a classical heuristic based on coin radius.
+  Coins that pass a predefined counting zone are accumulated to compute the total monetary value.
+  
+Requirements:
+  - A video file showing coins moving on a treadmill belt.
+  - Optionally, a custom-trained CNN model file (e.g., coin_cnn_model.h5) for coin classification.
+  
+Usage Example:
+  python CoinDetection.py coins_video.mp4 --model coin_cnn_model.h5 --use-cnn True --output annotated_coins.mp4
+
+Author: Sabneet Bains
+License: MIT License
+"""
+
+import argparse
+import logging
+import os
 import cv2 as cv
 import numpy as np
+from math import pi, sqrt
 
-class CoinDetection():
+# Only import TensorFlow/Keras if CNN mode is enabled.
+from tensorflow.keras.models import load_model
 
-    # constructor
-    def __init__(self, image_path):
-        ''' Initializes the class '''
-        self.image = cv.imread(image_path)
-        self.copy = self.image.copy()
-        self.grayscaled = []
-        self.blurred = []
-        self.edged = []
-        self.dilated = []
-        self.contours = []
-        self.cleaned = []
-        self.thresholded = []
-        self.masked = self.copy
-        self.labeled = self.copy
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    # getters
-    def get_image(self):
-        ''' Returns the image '''
-        return self.image
 
-    # methods
-    def convert_to_grayscale(self):
-        ''' Converts the image to grayscale '''
-        self.grayscaled = cv.cvtColor(self.copy, cv.COLOR_BGR2GRAY)
+class CoinDetection:
+    def __init__(self, video_path: str, model_path: str, use_cnn: bool = True):
+        """
+        Initialize the coin detection system.
 
-        return self.grayscaled
+        Parameters:
+            video_path (str): Path to the input video file.
+            model_path (str): Path to the custom CNN model file.
+            use_cnn (bool): Whether to use the CNN for classification (if False, use classical heuristic).
+        """
+        self.video = cv.VideoCapture(video_path)
+        if not self.video.isOpened():
+            logger.error("Failed to open video: %s", video_path)
+            raise FileNotFoundError(f"Cannot open video: {video_path}")
+        self.frame_width = int(self.video.get(cv.CAP_PROP_FRAME_WIDTH))
+        self.frame_height = int(self.video.get(cv.CAP_PROP_FRAME_HEIGHT))
+        self.fps = self.video.get(cv.CAP_PROP_FPS)
+        self.total_value = 0.0  # Running total monetary value
 
-    def apply_blur(self, blur_type, kernel_size):
-        ''' Applies a blur (smoothing) to the image '''
-        if blur_type == 'gaussian':
-            self.blurred = cv.GaussianBlur(self.grayscaled, (kernel_size, kernel_size), 0)
+        self.use_cnn = use_cnn
+        if self.use_cnn:
+            if not model_path:
+                raise ValueError("CNN mode enabled but model path not provided.")
+            logger.info("Using CNN for coin classification.")
+            self.model = load_model(model_path)
+        else:
+            logger.info("Using classical heuristic for coin classification.")
+
+        self.coin_labels = ["Dime", "Penny", "Nickel", "Quarter"]
+        self.coin_values = {"Dime": 0.10, "Penny": 0.01, "Nickel": 0.05, "Quarter": 0.25}
+
+        # Define counting zone: coins whose center_x > (frame_width - 100) are counted.
+        self.counting_zone = self.frame_width - 100
+
+    def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
+        """
+        Apply adaptive preprocessing: convert to grayscale, apply CLAHE, and Gaussian blur.
+
+        Parameters:
+            frame (np.ndarray): Input BGR frame.
+
+        Returns:
+            np.ndarray: Preprocessed grayscale image.
+        """
+        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        gray_eq = clahe.apply(gray)
+        blurred = cv.GaussianBlur(gray_eq, (9, 9), 0)
+        return blurred
+
+    def background_subtraction(self, frame: np.ndarray) -> np.ndarray:
+        """
+        Apply background subtraction to the grayscale frame.
+
+        Parameters:
+            frame (np.ndarray): Input BGR frame.
+
+        Returns:
+            np.ndarray: Foreground mask.
+        """
+        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        # Use a simple MOG2 subtractor for background subtraction.
+        bg_subtractor = cv.createBackgroundSubtractorMOG2(history=200, varThreshold=50, detectShadows=False)
+        fg_mask = bg_subtractor.apply(gray)
+        # Clean up the mask.
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+        mask_clean = cv.morphologyEx(fg_mask, cv.MORPH_OPEN, kernel)
+        return mask_clean
+
+    def detect_coins_combined(self, frame: np.ndarray) -> list:
+        """
+        Detect coin candidates using both Hough Circle Transform and contour analysis
+        on the background-subtracted mask.
+
+        Parameters:
+            frame (np.ndarray): Input BGR frame.
+
+        Returns:
+            list: List of candidate coins as tuples (x, y, radius).
+        """
+        candidates = []
+        # Preprocess for Hough detection.
+        preprocessed = self.preprocess_frame(frame)
+        circles = cv.HoughCircles(preprocessed, cv.HOUGH_GRADIENT, dp=1.2, minDist=50,
+                                   param1=50, param2=30, minRadius=20, maxRadius=100)
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            for circle in circles[0, :]:
+                x, y, r = circle
+                candidates.append((x, y, r))
+        # Also perform background subtraction and contour analysis.
+        mask = self.background_subtraction(frame)
+        cnts, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        for cnt in cnts:
+            area = cv.contourArea(cnt)
+            if area < 100:  # ignore small noise
+                continue
+            perimeter = cv.arcLength(cnt, True)
+            if perimeter == 0:
+                continue
+            circularity = 4 * pi * area / (perimeter * perimeter)
+            if circularity > 0.7:  # roughly circular
+                (x, y), r = cv.minEnclosingCircle(cnt)
+                candidates.append((int(x), int(y), int(r)))
+        # Optionally, remove duplicates by merging candidates that are close.
+        merged = []
+        for cand in candidates:
+            if not any(sqrt((cand[0]-m[0])**2 + (cand[1]-m[1])**2) < 10 for m in merged):
+                merged.append(cand)
+        return merged
+
+    def classify_coin_cnn(self, coin_roi: np.ndarray) -> (str, float):
+        """
+        Classify the coin ROI using the CNN model.
+
+        Parameters:
+            coin_roi (np.ndarray): BGR image of the coin.
+            
+        Returns:
+            tuple: (predicted coin label, confidence score)
+        """
+        coin_resized = cv.resize(coin_roi, (64, 64))
+        coin_normalized = coin_resized.astype('float32') / 255.0
+        coin_normalized = np.expand_dims(coin_normalized, axis=0)
+        predictions = self.model.predict(coin_normalized)
+        label_index = int(np.argmax(predictions))
+        confidence = float(predictions[0][label_index])
+        return self.coin_labels[label_index], confidence
+
+    def classify_coin_classical(self, radius: int) -> (str, float):
+        """
+        Classify the coin using a classical heuristic based on the coin's radius.
+
+        Parameters:
+            radius (int): Detected coin radius.
+
+        Returns:
+            tuple: (predicted coin label, estimated confidence)
+        """
+        if radius < 32:
+            label = "Dime"
+        elif 32 <= radius < 38:
+            label = "Penny"
+        elif 38 <= radius < 44:
+            label = "Nickel"
+        else:
+            label = "Quarter"
+        confidence = 0.7  # heuristic confidence
+        return label, confidence
+
+    def process_video(self, output_video: str = "annotated_coins.mp4") -> None:
+        """
+        Process the video frame-by-frame: detect and classify coins, annotate the frames,
+        and accumulate the total monetary value. At the end, print the total value.
+
+        Parameters:
+            output_video (str): Filename for the annotated output video.
+        """
+        fourcc = cv.VideoWriter_fourcc(*'mp4v')
+        writer = cv.VideoWriter(output_video, fourcc, self.fps, (self.frame_width, self.frame_height))
         
-        elif blur_type == 'median':
-            self.blurred = cv.medianBlur(self.grayscaled, kernel_size)
-        
-        elif blur_type == 'bilateral':
-            self.blurred = cv.bilateralFilter(self.grayscaled, kernel_size, 75, 75)
-        
-        elif blur_type == 'box':
-            self.blurred = cv.boxFilter(self.grayscaled, -1, (kernel_size, kernel_size))
-        
-        elif blur_type == 'mean':
-            self.blurred = cv.blur(self.grayscaled, (kernel_size, kernel_size))
-        
-        return self.blurred
-
-    def remove_background(self):
-        ''' Removes the background from the image '''
-        baseline = cv.threshold(self.blurred,127,255, cv.THRESH_TRUNC)[1]
-        background = cv.threshold(baseline,100,255, cv.THRESH_BINARY)[1]
-        foreground = cv.threshold(baseline,100,255, cv.THRESH_BINARY_INV)[1]
-
-        foreground = cv.bitwise_and(self.copy, self.copy, mask=foreground)
-        background = cv.cvtColor(background, cv.COLOR_GRAY2BGR)
-        self.cleaned = background + foreground
-
-        return self.cleaned
-
-    def apply_otsu_threshold(self, threshold):
-        ''' Applies an OTSU threshold to the grayscale image '''
-        self.thresholded = cv.threshold(self.blurred, threshold, 255, cv.THRESH_OTSU)[1]
-        self.thresholded = cv.bitwise_not(self.thresholded) # Pseudo mask
-
-        return self.thresholded
-
-    def apply_mask(self):
-        ''' Applies a binary mask to the image '''
-        self.convert_to_grayscale()
-        self.apply_blur('gaussian', 9)
-        self.apply_otsu_threshold(threshold=127)
-        self.masked = cv.bitwise_and(self.copy, self.copy, mask=self.thresholded)
-
-        return self.masked
-        
-    def apply_edge_detection(self, detection_type, threshold1, threshold2):
-        ''' Applies canny edge detection to the image '''
-        if detection_type == 'canny':
-            self.edged = cv.Canny(self.blurred, threshold1, threshold2, apertureSize=3)
-        
-        elif detection_type == 'sobel':
-            self.edged = cv.Sobel(self.blurred, -1, 1, 1)
-        
-        elif detection_type == 'laplacian':
-            self.edged = cv.Laplacian(self.blurred, -1)
-        
-        elif detection_type == 'scharr':
-            self.edged = cv.Scharr(self.blurred, -1, 1, 0)
-        
-        return self.edged
-    
-    def apply_dilation(self, kernel_size):
-        ''' Applies a dilation to the image '''
-        self.dilated = cv.dilate(self.edged, (kernel_size, kernel_size), iterations = 2)
-
-        return self.dilated
-
-    def find_contours(self):
-        ''' Finds the contours in the image '''
-        self.contours = cv.findContours(self.dilated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[0]
-        print('There are', len(self.contours), 'objects in the image') # Count blobs
-        
-        return self.contours
-
-    def label_coins(self):
-        ''' Labels the coins in the image '''
-        self.convert_to_grayscale()
-        self.apply_blur('gaussian', 9)
-        self.apply_edge_detection('canny', 30, 150)
-        self.apply_dilation(1)
-        self.find_contours()
-
-        for c in self.contours:
-            M = cv.moments(c)
-            cX = int((M["m10"] / M["m00"]))
-            cY = int((M["m01"] / M["m00"]))
-
-            length = cv.arcLength(c, True)
-            # area = cv.contourArea(c)
-
-            # dime < penny < nickel < quarter
-            if length > 382 and length < 390:
-                cv.drawContours(self.labeled, [c], -1, (255, 255, 0), 2)
-                cv.putText(self.labeled, "Dime", (cX, cY), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
-     
-            if length > 390 and length < 398:
-                cv.drawContours(self.labeled, [c], -1, (0, 0, 255), 2)
-                cv.putText(self.labeled, "Penny", (cX, cY), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-
-            if length > 440 and length < 448:
-                cv.drawContours(self.labeled, [c], -1, (255, 0, 0), 2)
-                cv.putText(self.labeled, "Nickel", (cX, cY), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-
-            if length > 495 and length < 514:
-                cv.drawContours(self.labeled, [c], -1, (0, 255, 0), 2)
-                cv.putText(self.labeled, "Quarter", (cX, cY), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-   
-        return self.labeled
-
-    def write_image(self, attributes):
-        ''' Writes the image to a file '''
-        table1 = np.hstack(attributes)
-        # table2 = np.vstack([cv.imread('result.jpg'), table1])
-        cv.imwrite('result.jpg', table1)
-
-    def show_image(self, attributes):
-        ''' Shows the image '''
-        table = np.hstack(attributes)
-        cv.imshow('image', table)
-        cv.waitKey(0)
+        frame_count = 0
+        while True:
+            ret, frame = self.video.read()
+            if not ret:
+                break
+            annotated = frame.copy()
+            candidates = self.detect_coins_combined(frame)
+            for (x_center, y_center, radius) in candidates:
+                # Draw circle for visualization.
+                cv.circle(annotated, (x_center, y_center), radius, (0, 255, 0), 2)
+                # Define ROI.
+                x = max(x_center - radius, 0)
+                y = max(y_center - radius, 0)
+                w = h = 2 * radius
+                coin_roi = frame[y:y+h, x:x+w]
+                if coin_roi.size == 0:
+                    continue
+                # Choose classification method.
+                if self.use_cnn:
+                    label, conf = self.classify_coin_cnn(coin_roi)
+                else:
+                    label, conf = self.classify_coin_classical(radius)
+                value = self.coin_values.get(label, 0)
+                cv.putText(annotated, f"{label} (${value:.2f}, {conf*100:.1f}%)", (x, y - 10),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                # Count coin if it passes the counting zone.
+                if x_center > self.counting_zone:
+                    self.total_value += value
+                    cv.circle(annotated, (x_center, y_center), 5, (0, 0, 255), -1)
+            writer.write(annotated)
+            cv.imshow("Annotated Coins", annotated)
+            if cv.waitKey(1) & 0xFF == 27:
+                break
+            frame_count += 1
+        writer.release()
+        self.video.release()
         cv.destroyAllWindows()
+        logger.info("Processed %d frames.", frame_count)
+        logger.info("Total monetary value detected: $%.2f", self.total_value)
+        print(f"Total monetary value detected: ${self.total_value:.2f}")
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Live Coin Detection and Classification from Video")
+    parser.add_argument("video", type=str, help="Path to the input video file.")
+    parser.add_argument("--model", type=str, default="", help="Path to the custom CNN model file (ignored if --use-cnn is False).")
+    parser.add_argument("--use-cnn", type=bool, default=True, help="Set to False to use classical heuristic classification.")
+    parser.add_argument("--output", type=str, default="annotated_coins.mp4", help="Output video filename.")
+    args = parser.parse_args()
+    
+    if args.use_cnn and not args.model:
+        parser.error("--model must be provided when --use-cnn is True.")
+    
+    coin_detector = CoinDetection(args.video, args.model, use_cnn=args.use_cnn)
+    coin_detector.process_video(output_video=args.output)
 
 if __name__ == "__main__":
-    coins = CoinDetection('image_00.jpg')
-    coins.apply_mask()
-    coins.label_coins()
-    coins.write_image([coins.image, coins.masked, coins.labeled])
+    main()
