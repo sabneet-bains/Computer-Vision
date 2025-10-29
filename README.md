@@ -1,124 +1,190 @@
-# 👁️ Computer Vision Repository  
+<div align="center"><a name="readme-top"></a>
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red?logo=opencv)](https://opencv.org/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-orange?logo=tensorflow)](https://www.tensorflow.org/)
-[![Computer Vision](https://img.shields.io/badge/Domain-Computer_Vision-lightgrey?logo=googlelens&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+# 👁️ Computer Vision — Classical × Deep Learning Systems
 
-<br>
+[![Python](https://img.shields.io/badge/Python-3.9%2B-528ec5?logo=python&logoColor=white&labelColor=0d1117&style=flat)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-d13c3c?logo=opencv&logoColor=white&labelColor=0d1117&style=flat)](https://opencv.org/)
+[![TensorFlow/Keras](https://img.shields.io/badge/TensorFlow-Keras-f9a03c?logo=tensorflow&logoColor=white&labelColor=0d1117&style=flat)](https://www.tensorflow.org/)
+[![Computer Vision](https://img.shields.io/badge/Domain-Computer_Vision-lightgrey?logo=googlelens&logoColor=white&labelColor=0d1117&style=flat)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2ECC71?labelColor=0d1117&style=flat)](https://choosealicense.com/licenses/mit/)
 
-**A curated collection of computer vision and image processing systems developed in Python, combining classical OpenCV techniques and deep learning for robust, real-time performance under challenging conditions.**
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/sabneet-bains/Computer-Vision)
 
-<img src="https://github.com/sabneet95/Computer-Vision/blob/main/bounded2.gif" alt="Computer Vision Example" width="800">
+**Seeing patterns through pixels.**  
+<sup>*A modular suite of vision systems fusing classical OpenCV pipelines with modern deep learning — for robust, real-time visual understanding.*</sup>
+
+<img src="https://github.com/sabneet-bains/Computer-Vision/blob/main/bounded2.gif" alt="Computer Vision Example" width="800">
+
+</div>
+
+> [!NOTE]
+> <sup>Part of the <b>Foundational & Academic</b> collection — educational tools designed with engineering rigor.</sup>
 
 
 ## 🧭 Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Highlighted Projects](#highlighted-projects)
-- [Screenshots](#screenshots)
-- [Requirements](#requirements)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [Future Work](#future-work)
-- [Author](#author)
-- [License](#license)
-
-
-## 🧩 Overview
-
-This repository explores and implements advanced computer vision algorithms that integrate **classical image processing** with **deep learning**.  
-Projects emphasize reproducibility, real-time performance, and modular design for research and production environments.
-
-### **Coin Detection and Classification**
-A live detection system that processes video to identify, classify, and assign values to coins in real time.  
-It integrates adaptive preprocessing (CLAHE, Gaussian blur), background subtraction, Hough circle transforms, and contour analysis with a custom CNN to achieve robust detection and ~10% accuracy improvements over heuristic methods.  
-A classical fallback mode is included when no CNN is provided.
-
-### **Other Image Processing Modules**
-Additional modules include experiments in color space transformations, morphological filtering, and edge detection — forming a versatile toolkit for both research and applied development.
+- [Overview](#-overview)
+- [Project Highlights](#-project-highlights)
+- [Repository Structure](#-repository-structure)
+- [Architecture](#-architecture)
+- [Screenshots](#-screenshots)
+- [Requirements](#-requirements)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+- [Future Work](#-future-work)
+- [Author](#-author)
+- [License](#-license)
 
 
-## 🧱 Architecture
+## 🧠 Overview
+This repository explores advanced **computer vision** algorithms that integrate **classical image processing** with **deep learning** models.  
+Each system is built for **modularity**, **reproducibility**, and **real-time performance**, making it suitable for both research and production deployment.
 
-The repository is designed with modularity and extensibility in mind:
+### 🪙 **Coin Detection & Classification**
+Real-time detection and valuation of coins in live video.  
+Combines adaptive preprocessing (**CLAHE**, **Gaussian blur**), **background subtraction**, **Hough circle transforms**, and **contour analysis** with a **CNN classifier** — improving accuracy by ~10% over heuristic baselines.  
+Includes a **classical fallback mode** when no CNN is available.
 
-- **Classical CV Techniques →** Implements proven methods such as Hough transforms, background subtraction, and contour analysis for feature extraction.  
-- **Deep Learning Integration →** Optional CNNs (TensorFlow/Keras) enhance classification accuracy and adaptability.  
-- **Robust Preprocessing →** Adaptive algorithms like CLAHE ensure consistent performance under fluctuating lighting.  
-- **Separation of Concerns →** Each module (e.g., coin detection, color transformations) is independently testable and integrable.
+### 🧩 **Other Image Processing Modules**
+Color space transforms, morphological filtering, and edge detection experiments — forming a versatile toolkit for prototyping and experimentation.
 
+<div align="right">
 
-## 🧠 Highlighted Projects
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
 
-| Project | Description | Key Technologies |
-|----------|--------------|------------------|
-| **Coin Detection** | Real-time detection, classification, and valuation of coins | OpenCV, TensorFlow, CNN |
-| **Image Filtering** | CLAHE, color masking, morphology, edge analysis | OpenCV, NumPy |
-| **Object Tracking (Planned)** | Multi-object tracking and motion analysis | Deep SORT, Kalman Filter |
+</div>
 
 
-## 🖼️ Screenshots
+## 🌌 Project Highlights
 
-<img src="https://github.com/sabneet95/Computer-Vision/blob/main/curves.jpg" alt="Screenshot 1" width="800">
-<img src="https://github.com/sabneet95/Computer-Vision/blob/main/sith.jpg" alt="Screenshot 2" width="800">
-<img src="https://github.com/sabneet95/Computer-Vision/blob/main/bounded2.gif" alt="Screenshot 3" width="800">
+| ⚙️ Module | 🧮 Description | 🧩 Framework |
+|:----------|:---------------|:-------------|
+| 🪙 **Coin Detection** | Real-time detection, classification, and valuation | OpenCV, TensorFlow |
+| 🎨 **Image Filtering** | CLAHE, color masking, morphology, edge analysis | OpenCV, NumPy |
+| 🎥 **Object Tracking (Planned)** | Multi-object tracking and motion analysis | Deep SORT, Kalman Filter |
+
+> [!TIP]
+> Projects are designed for **incremental experimentation** — start with classical CV, then extend to CNNs or hybrid pipelines.
+
+<div align="right">
+
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
+
+
+## 📂 Repository Structure
+````text
+Computer-Vision/
+│
+├── CoinDetection/
+│   ├── coin_detect.py
+│   ├── cnn_classifier.py
+│   ├── utils.py
+│   └── model/
+│       └── trained_cnn.h5
+│
+├── Filters/
+│   ├── color_space.py
+│   ├── morphology.py
+│   ├── edge_detection.py
+│
+├── Data/
+│   ├── sample_videos/
+│   └── sample_images/
+│
+└── README.md
+````
+> [!TIP]
+> Directory layout mirrors **functionality × learning depth** — classical modules coexist with deep-learning counterparts for side-by-side benchmarking.
+
+<div align="right">
+
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
 
 
 ## ⚙️ Requirements
+````text
+Python >= 3.9
+opencv-python >= 4.8
+tensorflow >= 2.10
+numpy >= 1.24
+````
+> [!IMPORTANT]
+> GPU acceleration (CUDA/cuDNN) is **optional but recommended** for CNN-based classifiers.
 
-- **Python 3.9.1 or later (64-bit)**  
-  [Download Python](https://www.python.org/downloads/)  
-- **OpenCV 4.x**  
-  [OpenCV Documentation](https://docs.opencv.org/4.x/)  
-- **TensorFlow/Keras**  
-  For running CNN-based classifiers.  
-- *(Optional)* **CUDA-enabled GPU**  
-  For accelerated processing.
+<div align="right">
+
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
 
 
 ## 🧪 Testing
+````bash
+# Run basic functional test
+python CoinDetection/coin_detect.py --test
 
-<details>
-<summary>Testing Status</summary>
+# Planned integration
+pytest tests/
+````
 
-Automated tests are not yet integrated.  
-Future updates may introduce **pytest**-based regression and performance testing.  
-Contributions to improve test coverage are welcome.
-</details>
+> [!NOTE]
+> Automated tests (e.g., **pytest**) are under development. Contributions adding regression or performance tests are highly encouraged.
+
+<div align="right">
+
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
 
 
 ## 🤝 Contributing
+**Contributions welcome!**  
+To maintain modular clarity and research reproducibility:
 
-Contributions are welcome!  
+1. **Discuss major changes** — open an issue first.  
+2. **Follow coding standards** — use docstrings, type hints, and consistent naming.  
+3. **Add reproducibility evidence** — logs, screenshots, or performance metrics.  
+4. **Open a pull request** with concise change notes.
 
-1. **Discuss Major Changes** — open an issue before implementing large features.  
-2. **Follow Coding Standards** — document functions clearly and maintain modular consistency.  
-3. **Submit Pull Requests** — include concise change descriptions and any new tests or examples.
+> [!TIP]
+> High-impact contributions include **object tracking modules**, **noise robustness experiments**, and **cross-framework benchmarks**.
 
-> 💡 Contributors working on **OpenCV extensions**, **deep learning integration**, or **real-time optimization** are especially encouraged to participate.
+<div align="right">
+
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
 
 
 ## 🚀 Future Work
+- **Object Tracking:** Integrate Kalman Filters and Deep SORT for temporal consistency.  
+- **New Deep Learning Models:** Broaden CNN architectures for improved coin classification.  
+- **Real-Time Dashboard:** Develop live visual monitoring tools.  
+- **Automated CI/CD:** Introduce test pipelines with continuous benchmarking.  
+- **Expanded Docs:** Add tutorials, architecture diagrams, and Jupyter demos.
 
-Planned enhancements include:
+<div align="right">
 
-- **Enhanced Object Tracking:** Integration of Kalman Filters and Deep SORT for temporal consistency.  
-- **Additional Deep Learning Models:** Broaden support for coin and object classification under variable conditions.  
-- **Real-Time Dashboard:** Develop a live monitoring dashboard for data visualization.  
-- **Automated Testing:** Integrate continuous testing and CI pipelines.  
-- **Expanded Documentation:** Provide detailed tutorials, architecture diagrams, and example use cases.
+[![Back to Top](https://img.shields.io/badge/-⫛_TO_TOP-0d1117?style=flat)](#readme-top)
+
+</div>
 
 
-## 🧠 Author
+<div align="center">
 
-**Sabneet Bains** — *Quantum × AI × Scientific Computing*  
+##
+### 👤 Author  
+**Sabneet Bains**  
+*Quantum × AI × Scientific Computing*  
 [LinkedIn](https://www.linkedin.com/in/sabneet-bains/) • [GitHub](https://github.com/sabneet-bains)
 
+##
+### 📄 License  
+Licensed under the [MIT License](https://choosealicense.com/licenses/mit/)
 
-## 📄 License
+<sub>“Vision reminds us — recognition isn’t perception; it’s understanding through structure.”</sub>
 
-This repository is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
-
+</div>
